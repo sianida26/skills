@@ -23,6 +23,10 @@ Walk this list for every seam under test. Write a test for each item that applie
 | **Unauthenticated** | No token, expired token, malformed token, token of a deleted or disabled user. All denied. |
 | **Workflow bypass** | Skipping a state (draft straight to paid), acting on a finalised record, approving one's own request, replaying a one-time action. |
 | **Race / double use** | Two concurrent requests redeem the same coupon, spend the same balance, or claim the same slot. Exactly one succeeds. |
+| **Rate limit / brute force** | Login, OTP, password reset, signup, invite, and token endpoints: send the limit plus one and get 429 with `Retry-After`. Check the limit is keyed per account and per client (rotating usernames from one client, or one username from many clients, still trips it), and that a success does not reset the attacker's counter. |
+| **Expensive actions** | Endpoints that send email/SMS/WA, call paid APIs or an LLM, export, or run heavy queries are rate limited per actor, so one user cannot burn quota or money for everyone. |
+| **Resource caps** | Page size, batch size, upload size, request body size, and query depth/complexity have a server-side maximum; asking for `limit=100000` gets the cap, not the table. |
+| **Client retry** | A client that calls the API (frontend, worker, SDK) backs off on 401/403/429/5xx and honours `Retry-After`, instead of retrying in a loop that turns one failure into a request storm. |
 | **Injection** | Untrusted input reaches a query, a path, a URL fetch, a shell, or a template: SQL/NoSQL operators, `../` path traversal, SSRF to internal addresses (`169.254.169.254`, `localhost`), header injection. |
 | **Data exposure** | Responses and error bodies contain no password hashes, tokens, secrets, internal IDs the caller should not see, or stack traces. |
 

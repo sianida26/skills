@@ -48,7 +48,7 @@ The "pre-agreed" part matters, and it is also the skill's weakest point. Nothing
 
 ## Security tests are not optional
 
-`tdd` runs "where possible", but security tests run every time. Before writing code, the run lists each trust boundary the work touches and writes the `tdd` security checklist tests for it (IDOR, mass assignment, tenant isolation, and the rest). Work that touches no trust boundary has to say so, with the reason. The run does not commit while a boundary is uncovered, and the final report maps each boundary to its tests.
+`tdd` runs "where possible", but security tests run every time. Before writing code, the run lists each trust boundary the work touches and writes the `tdd` security checklist tests for it (IDOR, mass assignment, tenant isolation, rate limits, and the rest). Work that touches no trust boundary has to say so, with the reason. The run does not commit while a boundary is uncovered, and the final report maps each boundary to its tests.
 
 ## Common questions
 

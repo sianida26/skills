@@ -1,8 +1,8 @@
 ## What it does
 
-`code-review` reviews the diff between `HEAD` and a fixed point you name (a commit, a branch, a tag, `main`, `HEAD~5`) along two axes. **Standards** asks whether the code follows how this repo writes code. **Spec** asks whether the code does what the originating issue or [spec](https://www.aihero.dev/ai-coding-dictionary/spec) asked for. Each axis runs in its own [sub-agent](https://www.aihero.dev/ai-coding-dictionary/subagent) so neither sees the other's reasoning.
+`code-review` reviews the diff between `HEAD` and a fixed point you name (a commit, a branch, a tag, `main`, `HEAD~5`) along three axes. **Standards** asks whether the code follows how this repo writes code. **Spec** asks whether the code does what the originating issue or [spec](https://www.aihero.dev/ai-coding-dictionary/spec) asked for. **Security** asks whether every trust boundary the diff touches is guarded and attacked by tests. Each axis runs in its own [sub-agent](https://www.aihero.dev/ai-coding-dictionary/subagent) so none sees another's reasoning.
 
-The skill never merges or re-ranks the two axes. The report ends with a worst issue *per axis* and declines to name a single winner across them. A change can pass one axis and fail the other. Code that follows every convention but implements the wrong thing passes Standards and fails Spec. Code that does exactly what the [ticket](https://www.aihero.dev/ai-coding-dictionary/ticket) asked but breaks the repo's conventions does the reverse. A blended verdict lets the passing axis hide the failing one.
+The skill never merges or re-ranks the axes. The report ends with a worst issue *per axis* and declines to name a single winner across them. A change can pass one axis and fail the other. Code that follows every convention but implements the wrong thing passes Standards and fails Spec. Code that does exactly what the [ticket](https://www.aihero.dev/ai-coding-dictionary/ticket) asked but breaks the repo's conventions does the reverse. A blended verdict lets the passing axis hide the failing one.
 
 ## When to reach for it
 
@@ -32,14 +32,16 @@ The Spec axis needs a spec to exist and be findable. It looks in this order:
 
 Step 1 depends on the tracker doc, which [setup-matt-pocock-skills](https://aihero.dev/skills-setup-matt-pocock-skills) writes. Without it the axis still works if you hand it a path. With no spec at all, the skill skips the Spec sub-agent and the report says "no spec available" rather than inventing requirements.
 
-## The two axes
+## The axes
 
-| | Standards | Spec |
-| --- | --- | --- |
-| Question | Is it built right? | Is it the right thing? |
-| Reads | The repo's documented standards, plus the smell baseline | The originating issue or spec |
-| Reports | Documented breaches (can be hard), and smells (always judgement calls) | Missing or partial requirements, scope creep, requirements implemented wrongly |
-| Every finding cites | The standards file and the rule, or the named smell plus the hunk | The line of the spec |
+| | Standards | Spec | Security |
+| --- | --- | --- | --- |
+| Question | Is it built right? | Is it the right thing? | Can the wrong user do it? |
+| Reads | The repo's documented standards, plus the smell baseline | The originating issue or spec | The `tdd` security checklist, plus any repo security rules |
+| Reports | Documented breaches (can be hard), and smells (always judgement calls) | Missing or partial requirements, scope creep, requirements implemented wrongly | Missing guards (IDOR, authz, mass assignment, rate limits, injection, and the rest) and missing attack tests per trust boundary |
+| Every finding cites | The standards file and the rule, or the named smell plus the hunk | The line of the spec | The trust boundary, the checklist item, and the hunk |
+
+Security always runs, spec or no spec. Specs rarely say "user B must not see user A's invoice", so the Spec axis cannot catch it.
 
 This design exists to avoid a generic review skill that does not know your standards. Such a skill flags what is deliberate in your codebase and misses the invariants your codebase depends on. So the repo's own documentation is the [primary source](https://www.aihero.dev/ai-coding-dictionary/primary-source) on the Standards axis, and **the repo always overrides**.
 

@@ -1,14 +1,15 @@
 ---
 name: code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along three axes: Standards (does the code follow this repo's documented coding standards?), Spec (does the code match what the originating issue/spec asked for?), and Security (is every trust boundary guarded and covered by security tests?). Runs the reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+Three-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
+- **Security**: is every trust boundary the diff touches guarded in code and covered by security tests?
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
+All three axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
 The issue tracker should have been provided to you. If not, tell the user to run `/setup-matt-pocock-skills`.
 
@@ -55,9 +56,13 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+### 3b. Load the security checklist
 
-Issue both sub-agent calls together, in the foreground, and aggregate the reports they return.
+Read `../tdd/security-tests.md` (relative to this skill's directory). It is the checklist the Security axis reviews against: IDOR, leaky lists, tenant isolation, function-level authz, mass assignment, unauthenticated access, workflow bypass, races, rate limits, expensive actions, resource caps, client retry, injection, data exposure. If the repo documents its own security rules, they add to the checklist; they never remove items from it.
+
+### 4. Spawn all sub-agents in parallel
+
+Issue all sub-agent calls together, in the foreground, and aggregate the reports they return.
 
 **Standards sub-agent prompt** should include:
 
@@ -71,19 +76,26 @@ Issue both sub-agent calls together, in the foreground, and aggregate the report
 - The path or fetched contents of the spec.
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
-If the spec is missing, skip the Spec sub-agent and note this in the final report.
+**Security sub-agent prompt** should include:
+
+- The diff command and commit list.
+- The security checklist from step 3b, pasted in full.
+- The brief: "List every trust boundary the diff adds or changes (HTTP route, RPC procedure, server action, webhook, queue consumer, CLI or job taking untrusted input, and any client code that calls an API). For each one, walk the checklist and report: (a) **missing guard**: the code does not enforce the item (no ownership scoping on the query, role not checked, body spread into the model, no rate limit on an auth or expensive endpoint, unbounded page size, retry without backoff, untrusted input reaching a query/path/URL/shell, secrets in a response); quote the hunk; (b) **missing test**: the guard may exist but no test attacks it with a second real actor and asserts both the denial and the unchanged state; tests that mock the auth layer count as missing. Mark (a) as hard findings and (b) as hard when the boundary is new in this diff. Skip an item only with a one-line reason. If the diff touches no trust boundary, say so and why. Under 500 words."
+
+If the spec is missing, skip the Spec sub-agent and note this in the final report. The Security sub-agent always runs.
 
 ### 5. Aggregate
 
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
+Present the reports under `## Standards`, `## Spec`, and `## Security` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the axes are deliberately separate (see _Why separate axes_).
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
-## Why two axes
+## Why separate axes
 
-A change can pass one axis and fail the other:
+A change can pass one axis and fail another:
 
 - Code that follows every standard but implements the wrong thing → **Standards pass, Spec fail.**
 - Code that does exactly what the issue asked but breaks the project's conventions → **Spec pass, Standards fail.**
+- Code that does what was asked, cleanly, but lets one user read another's data → **Standards and Spec pass, Security fail.** Specs rarely say "and user B must not see user A's invoice", so the Spec axis never catches it.
 
-Reporting them separately stops one axis from masking the other.
+Reporting them separately stops one axis from masking another.

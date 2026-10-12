@@ -46,6 +46,10 @@ The skill's central idea is the **seam**, the public boundary you observe behavi
 
 The "pre-agreed" part matters, and it is also the skill's weakest point. Nothing inside `implement` agrees the seams. `tdd` is the skill that asks, and it refuses to write a test at an unconfirmed seam. So in practice the agreement happens either upstream in the spec, or in the first exchange of the run. If it happens nowhere, the run becomes "just write the code" and nothing warns you. Naming the seams in the spec is what stops that.
 
+## Security tests are not optional
+
+`tdd` runs "where possible", but security tests run every time. Before writing code, the run lists each trust boundary the work touches and writes the `tdd` security checklist tests for it (IDOR, mass assignment, tenant isolation, and the rest). Work that touches no trust boundary has to say so, with the reason. The run does not commit while a boundary is uncovered, and the final report maps each boundary to its tests.
+
 ## Common questions
 
 **It finished, but my ticket is still open and the acceptance criteria are still unchecked.**

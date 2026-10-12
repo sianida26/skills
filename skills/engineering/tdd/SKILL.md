@@ -25,6 +25,10 @@ Ask: "What's the public interface, and which seams should we test?" Give each pr
 
 When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), call the Skill tool with "codebase-design" for the vocabulary. It is the shared source of the module, interface, depth, seam, adapter, leverage and locality terms, and it is a reference to consult, not a session to run.
 
+## Security seams
+
+When proposing seams, mark every seam that crosses a trust boundary (HTTP route, RPC procedure, server action, webhook, queue consumer, anything taking untrusted input). Those seams get security tests in the same loop as their behaviour tests: a second real actor attacks the first actor's data, and the test asserts both the denial and the unchanged state. Walk the checklist in [security-tests.md](security-tests.md) for each one, and write down a one-line reason for any item you skip. A trust-boundary seam with only happy-path tests is not done.
+
 ## Anti-patterns
 
 - **Implementation-coupled**: mocks internal collaborators, tests private methods, or verifies through a side channel (querying the database instead of using the interface). The tell: the test breaks when you refactor but behavior hasn't changed.

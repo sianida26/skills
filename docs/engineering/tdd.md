@@ -44,6 +44,10 @@ The three anti-patterns it is written to prevent:
 
 Mocks are for system boundaries only: external APIs, time, randomness, sometimes the filesystem or the database. Never mock your own modules.
 
+## Security seams
+
+Seams that cross a trust boundary (routes, procedures, server actions, webhooks, queue consumers) get security tests in the same loop. A second real user attacks the first user's data, and the test checks both the denial and that nothing changed. The checklist lives in `security-tests.md`: IDOR, leaky lists, tenant isolation, function-level authz, mass assignment, unauthenticated access, workflow bypass, races, injection, and data exposure. The auth layer is never mocked, because a mocked guard passes by construction.
+
 ## Common questions
 
 **Why doesn't it refactor? The description says "red-green-refactor".**
